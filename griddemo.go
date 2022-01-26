@@ -61,7 +61,7 @@ func main() {
 					count++
 					gtx := layout.NewContext(&ops, e)
 					// Lay out the form
-					formLayout(gtx, th, true)
+					formLayout(gtx, th, "1")
 					// Apply the actual screen drawing
 					e.Frame(gtx.Ops)
 				}
@@ -173,6 +173,14 @@ func headingCell(th *material.Theme) layout.ListElement {
 	}
 }
 
+func gridCell2() layout.Cell {
+	return func(gtx layout.Context, col, row int) layout.Dimensions {
+		paint.ColorOp{Color: color.NRGBA{R: uint8((col * 32) & 0xFF), G: uint8((row * 32) & 0xFF), B: uint8((row * col) & 0xFF), A: 255}}.Add(gtx.Ops)
+		paint.PaintOp{}.Add(gtx.Ops)
+		return layout.Dimensions{Size: gtx.Constraints.Max}
+	}
+}
+
 func gridCell(th *material.Theme, tbl personTable) layout.Cell {
 	return func(gtx layout.Context, col, row int) layout.Dimensions {
 		if col < len(tbl) {
@@ -206,36 +214,73 @@ var (
 	grid      = &widget.Grid{Grid: layout.Grid{}}
 	oldAlloc  uint64
 	alloc     uint64
-	colWidths = []float32{50, 350, 350, 100}
+	colWidths = []unit.Value{unit.Dp(50), unit.Dp(350), unit.Dp(350), unit.Dp(100)}
 	rowHeight = unit.Dp(23)
+	no        = widget.Enum{Value: "1"}
+	cellSize  = unit.Dp(80)
+	fracW     = []float32{0.1, 0.3, 0.3, 0.1}
 )
 
-func formLayout(gtx layout.Context, th *material.Theme, showGrid bool) layout.Dimensions {
+func formLayout(gtx layout.Context, th *material.Theme, showGrid string) layout.Dimensions {
 	// Read memory statistics to determine allocated memory size. First garbage collect.
 	runtime.GC()
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	oldAlloc = m.Alloc
+	w := make([]unit.Value, 50)
+	for i := range w {
+		w[i] = cellSize
+	}
 
 	// Fixed layout with heading and statistics
 	var children []layout.FlexChild
 	children = append(children,
 		layout.Rigid(label(th.TextSize.Scale(1.5), hdrPad, "Grid demo with widget.grid")),
 		layout.Rigid(label(th.TextSize, hdrPad, "Running at "+
-			fmt.Sprintf(" %0.1f frames/second, %v allocations", count/time.Since(startTime).Seconds(), alloc))))
-	//layout.Rigid(material.Separator(th.Fg, unit.Dp(4), unit.Dp(4), unit.Dp(1))))
+			fmt.Sprintf(" %0.1f frames/second, %v allocations", count/time.Since(startTime).Seconds(), alloc))),
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Start}.Layout(gtx,
+				layout.Rigid(material.RadioButton(th, &no, "1", "Occupy   ").Layout),
+				layout.Rigid(material.RadioButton(th, &no, "2", "Overlay   ").Layout),
+				layout.Rigid(material.RadioButton(th, &no, "3", "FracWidth   ").Layout),
+				layout.Rigid(material.RadioButton(th, &no, "4", "ColorGrid   ").Layout),
+			)
+		}))
 
-	// Add the grid itself only when showGrid is true. This is done to separate timing of grids from the rest
-	if showGrid {
-		myGrid := material.Table(th, grid)
-		//myGrid.AnchorStrategy = material.Overlay
-		ConfigureScrollbar(&myGrid.VScrollbarStyle)
-		ConfigureScrollbar(&myGrid.HScrollbarStyle)
+	if no.Value == "1" {
+		t := material.Table(th, grid)
+		t.AnchorStrategy = material.Occupy
+		ConfigureScrollbar(&t.VScrollbarStyle)
+		ConfigureScrollbar(&t.HScrollbarStyle)
 		children = append(children,
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				//return myGrid.Layout(gtx, len(data), rowHeight, colWidths, gridCell(th, data))
-				return myGrid.Layout(gtx, len(data), rowHeight, colWidths, gridCell(th, data), headingCell(th))
+				return t.Layout(gtx, len(data), rowHeight, colWidths, gridCell(th, data), headingCell(th))
 			}))
+	} else if no.Value == "2" {
+		g := material.Table(th, grid)
+		g.AnchorStrategy = material.Overlay
+		ConfigureScrollbar(&g.VScrollbarStyle)
+		ConfigureScrollbar(&g.HScrollbarStyle)
+		children = append(children,
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return g.Layout(gtx, len(data), rowHeight, colWidths, gridCell(th, data), headingCell(th))
+			}))
+	} else if no.Value == "3" {
+		t := material.Table(th, grid)
+		t.AnchorStrategy = material.Occupy
+		ConfigureScrollbar(&t.VScrollbarStyle)
+		ConfigureScrollbar(&t.HScrollbarStyle)
+		children = append(children,
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return t.LayoutFractWidths(gtx, len(data), rowHeight, fracW, gridCell(th, data), headingCell(th))
+			}))
+	} else {
+		myGrid := material.Grid(th, grid)
+		children = append(children,
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return myGrid.Layout(gtx, 255, cellSize, w, gridCell2())
+			}))
+
 	}
 
 	// Then do actual layout

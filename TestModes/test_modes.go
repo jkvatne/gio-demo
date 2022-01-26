@@ -41,20 +41,17 @@ func main() {
 		case 3:
 			w = app.NewWindow(app.Title("Centered"), app.Centered())
 		case 4:
-			w = app.NewWindow(app.Title("Positioned"), app.Pos(unit.Dp(70), unit.Dp(70)))
-		case 5:
 			w = app.NewWindow(app.Title("Sized"), app.Size(unit.Dp(400), unit.Dp(400)))
-		case 6:
+		case 5:
 			w = app.NewWindow(app.Title("Fullscreen"), app.Fullscreen.Option())
 		default:
 			fmt.Println("Specify test number on command line, -test=n, where n=1..6")
-			fmt.Println("Example: go run testwindows.go -test=1")
+			fmt.Println("Example: go run test_modes.go -test=1")
 			fmt.Println("1 = Maximized window")
 			fmt.Println("2 = Minimized window")
 			fmt.Println("3 = Centered window")
-			fmt.Println("4 = Positioned window")
-			fmt.Println("5 = Sized window")
-			fmt.Println("6 = Fullscreen window")
+			fmt.Println("4 = Sized window")
+			fmt.Println("5 = Fullscreen window")
 			os.Exit(1)
 		}
 		err := run(w)
@@ -76,8 +73,8 @@ func run(w *app.Window) error {
 		case system.DestroyEvent:
 			return e.Err
 		case app.ConfigEvent:
-			fmt.Printf("ConfigEvent, mode=%s, Size=%d,%d, Pos=%d,%d\n",
-				e.Config.Mode.String(), e.Config.Size.X, e.Config.Size.Y, e.Config.Pos.X, e.Config.Pos.Y)
+			fmt.Printf("ConfigEvent, mode=%s, Size=%d,%d\n",
+				e.Config.Mode.String(), e.Config.Size.X, e.Config.Size.Y)
 		case system.FrameEvent:
 			gtx := layout.NewContext(&ops, e)
 			l := material.H1(th, "Hello, Gio")
@@ -106,12 +103,12 @@ func run(w *app.Window) error {
 						}),
 						layout.Rigid(func(gtx C) D {
 							return in.Layout(gtx, func(gtx C) D {
-								return material.Button(th, button4, "700x400").Layout(gtx)
+								return material.Button(th, button4, "100x100").Layout(gtx)
 							})
 						}),
 						layout.Rigid(func(gtx C) D {
 							return in.Layout(gtx, func(gtx C) D {
-								return material.Button(th, button5, "TopLeft 700x300").Layout(gtx)
+								return material.Button(th, button5, "800x300").Layout(gtx)
 							})
 						}),
 						layout.Rigid(func(gtx C) D {
@@ -124,24 +121,22 @@ func run(w *app.Window) error {
 				),
 			)
 			for button1.Clicked() {
-				w.Maximize()
+				w.Option(app.Maximized.Option())
 			}
 			for button2.Clicked() {
-				w.Minimize()
+				w.Option(app.Minimized.Option())
 			}
 			for button3.Clicked() {
-				w.Fullscreen()
+				w.Option(app.Fullscreen.Option())
 			}
 			for button4.Clicked() {
-				w.Size(unit.Dp(700), unit.Dp(400))
-				w.Pos(unit.Dp(200), unit.Dp(200))
+				w.Option(app.Size(unit.Dp(100), unit.Dp(100)))
 			}
 			for button5.Clicked() {
-				w.Size(unit.Dp(700), unit.Dp(300))
-				w.Pos(unit.Dp(0), unit.Dp(0))
+				w.Option(app.Size(unit.Dp(800), unit.Dp(300)))
 			}
 			for button6.Clicked() {
-				w.Center()
+				w.Option(app.Centered())
 			}
 
 			e.Frame(gtx.Ops)

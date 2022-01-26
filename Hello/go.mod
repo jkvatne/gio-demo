@@ -13,4 +13,5 @@ require (
 	golang.org/x/text v0.3.6 // indirect
 )
 
-replace gioui.org => c:/doc/gio-grid-review
+//replace gioui.org => /mnt/c/doc/gio
+replace gioui.org => c:/doc/gio

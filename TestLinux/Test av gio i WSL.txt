@@ -1,0 +1,41 @@
+Test av gio i WSL
+=================
+
+Laster ned til Downloads i Windows.
+
+cp /mnt/c/Users/jkvat/Downloads/go1.17.6.linux-amd64.tar.gz .
+sudo tar -C /usr/local -xzf go1.17.6.linux-amd64.tar.gz
+
+
+Add following to ~/.profile:
+export PATH=$PATH:/usr/local/go/bin
+
+sudo apt-get update && sudo apt-get upgrade -y
+sudo apt autoremove -y
+sudo apt-get install gcc -y
+gcc --version
+sudo apt-get install pkg-config -y
+ 
+cd /mnt/c/doc/gio-demo/TestLinux
+
+go run testwindows.go
+go run -tags=novulkan testwindows.go
+
+
+
+Fra gio webside:
+apt install gcc pkg-config libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev
+
+
+
+Install Vulkan on WSL
+---------------------
+
+sudo apt install llvm libxcb-randr0 libxcb-shm0 libxcb-xfixes0
+
+mkdir ~/mesa-local
+Download wsl-ubuntu2004-vulkan-mesa20.3-20201220.tar.gz
+tar xzvf /mnt/c/users/jkvat/downloads/wsl-ubuntu2004-vulkan-mesa20.3-20201220.tar.gz -C ~/mesa-local
+
+
+Installasjon feilet, men feilen i gio ble borte!
