@@ -7,6 +7,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"gio-demo/fps-test"
+	"gioui.org/op/clip"
 	"image/color"
 	"net/http"
 	_ "net/http/pprof"
@@ -27,11 +29,17 @@ import (
 	"gioui.org/widget/material"
 )
 
+type (
+	C = layout.Context
+	D = layout.Dimensions
+)
+
 var (
 	th        = material.NewTheme(gofont.Collection())
 	progress  float32
 	count     float64
 	startTime time.Time
+	cgrid     widget.Grid
 )
 
 func main() {
@@ -60,6 +68,7 @@ func main() {
 				case system.FrameEvent:
 					count++
 					gtx := layout.NewContext(&ops, e)
+					op.InvalidateOp{}.Add(gtx.Ops)
 					// Lay out the form
 					formLayout(gtx, th, "1")
 					// Apply the actual screen drawing
@@ -174,7 +183,7 @@ func headingCell(th *material.Theme) layout.ListElement {
 }
 
 func gridCell2() layout.Cell {
-	return func(gtx layout.Context, col, row int) layout.Dimensions {
+	return func(gtx layout.Context, row int, col int) layout.Dimensions {
 		paint.ColorOp{Color: color.NRGBA{R: uint8((col * 32) & 0xFF), G: uint8((row * 32) & 0xFF), B: uint8((row * col) & 0xFF), A: 255}}.Add(gtx.Ops)
 		paint.PaintOp{}.Add(gtx.Ops)
 		return layout.Dimensions{Size: gtx.Constraints.Max}
@@ -182,7 +191,7 @@ func gridCell2() layout.Cell {
 }
 
 func gridCell(th *material.Theme, tbl personTable) layout.Cell {
-	return func(gtx layout.Context, col, row int) layout.Dimensions {
+	return func(gtx layout.Context, row, col int) layout.Dimensions {
 		if col < len(tbl) {
 			if row&1 == 0 {
 				paint.ColorOp{Color: color.NRGBA{R: 244, G: 244, B: 244, A: 255}}.Add(gtx.Ops)
@@ -210,6 +219,14 @@ func ConfigureScrollbar(s *material.ScrollbarStyle) {
 	s.Indicator.MinorWidth = unit.Dp(10)
 }
 
+func calcWidths(gtx C, widths []unit.Value, quantity int, size unit.Value) []unit.Value {
+	widths = widths[:0]
+	for i := 0; i < quantity; i++ {
+		widths = append(widths, size)
+	}
+	return widths
+}
+
 var (
 	grid      = &widget.Grid{Grid: layout.Grid{}}
 	oldAlloc  uint64
@@ -217,8 +234,9 @@ var (
 	colWidths = []unit.Value{unit.Dp(50), unit.Dp(350), unit.Dp(350), unit.Dp(100)}
 	rowHeight = unit.Dp(23)
 	no        = widget.Enum{Value: "1"}
-	cellSize  = unit.Dp(80)
 	fracW     = []float32{0.1, 0.3, 0.3, 0.1}
+	widths    = make([]unit.Value, 0, 100)
+	cellSize  = unit.Dp(10)
 )
 
 func formLayout(gtx layout.Context, th *material.Theme, showGrid string) layout.Dimensions {
@@ -231,6 +249,7 @@ func formLayout(gtx layout.Context, th *material.Theme, showGrid string) layout.
 	for i := range w {
 		w[i] = cellSize
 	}
+	widths = calcWidths(gtx, widths, 100, cellSize)
 
 	// Fixed layout with heading and statistics
 	var children []layout.FlexChild
@@ -244,6 +263,7 @@ func formLayout(gtx layout.Context, th *material.Theme, showGrid string) layout.
 				layout.Rigid(material.RadioButton(th, &no, "2", "Overlay   ").Layout),
 				layout.Rigid(material.RadioButton(th, &no, "3", "FracWidth   ").Layout),
 				layout.Rigid(material.RadioButton(th, &no, "4", "ColorGrid   ").Layout),
+				layout.Rigid(material.RadioButton(th, &no, "5", "FpsGrid   ").Layout),
 			)
 		}))
 
@@ -272,15 +292,33 @@ func formLayout(gtx layout.Context, th *material.Theme, showGrid string) layout.
 		ConfigureScrollbar(&t.HScrollbarStyle)
 		children = append(children,
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				return t.LayoutFractWidths(gtx, len(data), rowHeight, fracW, gridCell(th, data), headingCell(th))
-			}))
-	} else {
-		myGrid := material.Grid(th, grid)
-		children = append(children,
-			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				return myGrid.Layout(gtx, 255, cellSize, w, gridCell2())
+				return t.Layout(gtx, len(data), rowHeight, material.WeightedWidths(gtx, fracW), gridCell(th, data), headingCell(th))
 			}))
 
+	} else if no.Value == "4" {
+		/*
+			myGrid := material.Grid(th, grid)
+			children = append(children,
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					return myGrid.Layout(gtx, 255, cellSize, w, gridCell2())
+				}))
+		*/
+		children = append(children,
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return material.Grid(th, &cgrid).Layout(gtx, 100, cellSize, widths,
+					func(gtx C, row, col int) D {
+						c := color.NRGBA{R: uint8(3 * row), G: uint8(5 * col), B: uint8(row * col), A: 255}
+						paint.FillShape(gtx.Ops, c, clip.Rect{Max: gtx.Constraints.Max}.Op())
+						return D{Size: gtx.Constraints.Max}
+					},
+				)
+			}))
+
+	} else if no.Value == "5" {
+		children = append(children,
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return fps.LayoutFpsTable(th, gtx)
+			}))
 	}
 
 	// Then do actual layout
