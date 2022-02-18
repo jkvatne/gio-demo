@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"gio-demo/fps-test"
 	"gioui.org/op/clip"
+	"gioui.org/text"
 	"image/color"
 	"net/http"
 	_ "net/http/pprof"
@@ -207,7 +208,9 @@ func gridCell(th *material.Theme, tbl personTable) layout.Cell {
 			case 2:
 				return material.Label(th, th.TextSize, tbl[row].Address).Layout(gtx)
 			case 3:
-				return material.Label(th, th.TextSize, fmt.Sprintf("%d", tbl[row].Age)).Layout(gtx)
+				l := material.Label(th, th.TextSize, fmt.Sprintf("%d", row))
+				l.Alignment = text.End
+				return l.Layout(gtx)
 			}
 		}
 		return layout.Dimensions{}
@@ -236,7 +239,7 @@ var (
 	no        = widget.Enum{Value: "1"}
 	fracW     = []float32{0.1, 0.3, 0.3, 0.1}
 	widths    = make([]unit.Value, 0, 100)
-	cellSize  = unit.Dp(10)
+	cellSize  = unit.Dp(20)
 )
 
 func formLayout(gtx layout.Context, th *material.Theme, showGrid string) layout.Dimensions {
@@ -262,8 +265,9 @@ func formLayout(gtx layout.Context, th *material.Theme, showGrid string) layout.
 				layout.Rigid(material.RadioButton(th, &no, "1", "Occupy   ").Layout),
 				layout.Rigid(material.RadioButton(th, &no, "2", "Overlay   ").Layout),
 				layout.Rigid(material.RadioButton(th, &no, "3", "FracWidth   ").Layout),
-				layout.Rigid(material.RadioButton(th, &no, "4", "ColorGrid   ").Layout),
-				layout.Rigid(material.RadioButton(th, &no, "5", "FpsGrid   ").Layout),
+				layout.Rigid(material.RadioButton(th, &no, "4", "Colors 1   ").Layout),
+				layout.Rigid(material.RadioButton(th, &no, "5", "Colors 2   ").Layout),
+				layout.Rigid(material.RadioButton(th, &no, "6", "Fps   ").Layout),
 			)
 		}))
 
@@ -294,15 +298,14 @@ func formLayout(gtx layout.Context, th *material.Theme, showGrid string) layout.
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return t.Layout(gtx, len(data), rowHeight, material.WeightedWidths(gtx, fracW), gridCell(th, data), headingCell(th))
 			}))
-
 	} else if no.Value == "4" {
-		/*
-			myGrid := material.Grid(th, grid)
-			children = append(children,
-				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-					return myGrid.Layout(gtx, 255, cellSize, w, gridCell2())
-				}))
-		*/
+		myGrid := material.Grid(th, grid)
+		children = append(children,
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return myGrid.Layout(gtx, 255, cellSize, w, gridCell2())
+			}))
+
+	} else if no.Value == "5" {
 		children = append(children,
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return material.Grid(th, &cgrid).Layout(gtx, 100, cellSize, widths,
@@ -314,7 +317,8 @@ func formLayout(gtx layout.Context, th *material.Theme, showGrid string) layout.
 				)
 			}))
 
-	} else if no.Value == "5" {
+	} else if no.Value == "6" {
+		// A table with frames pr seconds
 		children = append(children,
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return fps.LayoutFpsTable(th, gtx)

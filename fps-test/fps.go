@@ -36,7 +36,7 @@ var timings []FrameTiming
 var frameCounter int
 var TimingStart = time.Time{}
 var grid widget.Grid
-var TimingWindow = time.Second * 5
+var TimingWindow = time.Second
 
 func LayoutFpsTable(th *material.Theme, gtx C) D {
 	if TimingStart == (time.Time{}) {
@@ -55,13 +55,18 @@ func LayoutFpsTable(th *material.Theme, gtx C) D {
 	frameCounter++
 
 	// Configure width based on available space and a minimum size.
-	widthUnit := float32(max(gtx.Constraints.Max.X/3, gtx.Px(unit.Dp(200))))
+	widthUnit := float32(max(gtx.Constraints.Max.X/3, gtx.Px(unit.Dp(100))))
 	widths := []unit.Value{
 		unit.Px(widthUnit),
 		unit.Px(widthUnit),
 		unit.Px(widthUnit * .5),
 		unit.Px(widthUnit * .5),
 	}
+	// Avoid rounding errors that causes the horizontal scrollbar to go on and off when resizing
+	if widthUnit > float32(gtx.Px(unit.Dp(500))) {
+		widths[0] = unit.Px(float32(gtx.Constraints.Max.X) - widths[1].V - widths[2].V - widths[3].V)
+	}
+
 	border := widget.Border{
 		Color: color.NRGBA{A: 255},
 		Width: unit.Px(1),

@@ -2,7 +2,9 @@ module gio-demo
 
 go 1.17
 
-require gioui.org v0.0.0-20211202105001-872b4ba41be0
+replace gioui.org => github.com/jkvatne/gio v0.0.0-20220217162326-df7a2e814db5
+
+require gioui.org v0.0.0-20210917064713-799ee3374d9f
 
 require (
 	gioui.org/cpu v0.0.0-20210817075930-8d6a761490d2 // indirect
@@ -13,4 +15,4 @@ require (
 	golang.org/x/text v0.3.6 // indirect
 )
 
-replace gioui.org => c:/doc/gio
+//replace gioui.org => c:/doc/gio

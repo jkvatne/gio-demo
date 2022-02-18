@@ -1,2 +1,5 @@
 .gradle
 **/android/build
+*.prof
+*.patch
+.private
