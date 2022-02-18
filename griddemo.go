@@ -7,9 +7,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"gio-demo/fps-test"
 	"gioui.org/op/clip"
 	"gioui.org/text"
+	"github.com/jkvatne/gio-demo/fps-test"
 	"image/color"
 	"net/http"
 	_ "net/http/pprof"
@@ -18,8 +18,6 @@ import (
 	"runtime/pprof"
 	"time"
 
-	"gioui.org/widget"
-
 	"gioui.org/app"
 	"gioui.org/font/gofont"
 	"gioui.org/io/system"
@@ -27,6 +25,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
+	"gioui.org/widget"
 	"gioui.org/widget/material"
 )
 
