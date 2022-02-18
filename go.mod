@@ -1,4 +1,4 @@
-module gio-demo
+module github.com/jkvatne/gio-demo
 
 go 1.17
 
